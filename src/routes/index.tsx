@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signInUser } from "@/lib/auth";
+import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -37,6 +38,28 @@ function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  async function handleGoogle() {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        setError("Google sign-in failed. Please try again.");
+        return;
+      }
+      if (result.redirected) return;
+      toast.success("Welcome back to LabelCheck.");
+      navigate({ to: "/dashboard" });
+    } catch {
+      setError("Google sign-in failed. Please try again.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -135,10 +158,11 @@ function LoginPage() {
       <Button
         type="button"
         variant="outline"
+        disabled={googleLoading}
         className="h-11 w-full rounded-xl"
-        onClick={() => toast.info("Google sign-in isn't enabled yet.")}
+        onClick={handleGoogle}
       >
-        <GoogleIcon />
+        {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
         Continue with Google
       </Button>
     </AuthShell>
